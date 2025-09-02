@@ -126,24 +126,6 @@ model_gn_dc = models_list_out[-4]
 model_dp_cov_dc = models_list_out[-3]
 model_py_cov_dc = models_list_out[-2]
 model_gn_cov_dc = models_list_out[-1]
-
-with open('results/models/model_dp_dc.pkl', 'wb') as f:
-    pickle.dump(model_dp_dc, f)
-
-with open('results/models/model_py_dc.pkl', 'wb') as f:
-    pickle.dump(model_py_dc, f)
-
-with open('results/models/model_gn_dc.pkl', 'wb') as f:
-    pickle.dump(model_gn_dc, f)
-
-with open('results/models/model_dp_cov_dc.pkl', 'wb') as f:
-    pickle.dump(model_dp_cov_dc, f)
-
-with open('results/models/model_py_cov_dc.pkl', 'wb') as f:
-    pickle.dump(model_py_cov_dc, f)
-
-with open('results/models/model_gn_cov_dc.pkl', 'wb') as f:
-    pickle.dump(model_gn_cov_dc, f)
     
 llk_dp = model_dp_dc.train_llk
 llk_py = model_py_dc.train_llk
