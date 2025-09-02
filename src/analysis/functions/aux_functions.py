@@ -7,11 +7,17 @@ import numpy as np
 
 
 def compute_precision(true, preds):
-    return len(set(true).intersection(set(preds)))/len(preds)
+    try:
+        return len(set(true).intersection(set(preds)))/len(preds)
+    except ZeroDivisionError:
+        return 0.0
 
 def compute_recall(true, preds):
-    return len(set(true).intersection(set(preds)))/len(true)
-    
+    try:
+        return len(set(true).intersection(set(preds)))/len(true)
+    except ZeroDivisionError:
+        return 0.0
+
 # some fast functions
 @nb.jit(nopython=True)
 def gammaln_nb(x:int)->float:
@@ -44,6 +50,7 @@ def relabel_clusters(cluster_indices):
 # auxialiaries for plotting
 
 # function to plot the heatmap representation
+
 def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=True, size=(12,10), capped=None):
 
     import numpy as np
@@ -237,38 +244,3 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
                             bbox_to_anchor=(0.25, -5), loc='center right')    
 
     plt.show()
-    
-##################
-#some useful functions
-def compute_precision(true, preds):
-    return len(set(true).intersection(set(preds)))/len(preds)
-
-def compute_recall(true, preds):
-    return len(set(true).intersection(set(preds)))/len(true)
-    
-# some fast functions
-@nb.jit(nopython=True)
-def gammaln_nb(x:int)->float:
-    return sc.gammaln(x)
-
-@nb.jit(nopython=True)
-def rising_factorial(a, n):
-    if n == 0:
-        return 1
-    return a*rising_factorial(a+1, n-1)
-
-@nb.jit(nopython=True)
-def truncated_factorial(n, k):
-    result = 1
-    for i in range(k):
-        result *= (n-i)
-    return result
-
-def relabel_clusters(cluster_indices):
-    unique_labels, counts = np.unique(cluster_indices, return_counts=True) 
-    sorted_labels = unique_labels[np.argsort(-counts)] 
-    
-    label_mapping = {old_label: new_label for new_label, old_label in enumerate(sorted_labels)}  # Create mapping
-    relabeled_clusters = np.vectorize(label_mapping.get)(cluster_indices)  # Apply mapping
-
-    return relabeled_clusters

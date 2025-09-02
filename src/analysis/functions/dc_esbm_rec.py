@@ -46,7 +46,7 @@ class dcesbm(esbm):
         # initialise this to None
         self.estimated_phi_users = None
         self.estimated_phi_items = None
-
+ 
         super().__init__(num_items=num_items, num_users=num_users, n_clusters_items=n_clusters_items, n_clusters_users=n_clusters_users,
                  prior_a=prior_a, prior_b=prior_b, seed = seed, user_clustering=user_clustering, item_clustering=item_clustering,
                  Y=Y, theta = theta, scheme_type = scheme_type, scheme_param = scheme_param, sigma = sigma, bar_h_users=bar_h_users,
@@ -94,7 +94,6 @@ class dcesbm(esbm):
         self.phi_i = phi_i.copy()
 
         Y_params = np.zeros(shape=(self.num_users, self.num_items))
-        
         for i in range(self.num_users):
             for j in range(self.num_items):
                 zu = self.user_clustering[i]
@@ -362,6 +361,7 @@ class dcesbm(esbm):
         np.random.seed(self.seed)
         
         self.n_iters = n_iters
+        assert len(self.user_clustering)==len(self.degree_users)
         
         ll = compute_log_likelihood(nh = self.frequencies_users, 
                                     nk = self.frequencies_items, 

@@ -12,23 +12,27 @@ from numba import cuda
 ###############
 #llk computation
 @nb.jit(nopython=True, fastmath=True)
-def compute_log_likelihood(a, b, nh, nk, eps, mhk, user_clustering, item_clustering, dg_u, dg_i, dg_cl_u, dg_cl_i, degree_param=1.5, degree_corrected=False):
+def compute_log_likelihood(a, b, nh, nk, eps, mhk, user_clustering, item_clustering, dg_u, dg_i, dg_cl_u, dg_cl_i, degree_param_users=0.5, degree_param_items=0.5, degree_corrected=False):
     out = 0.0
     if degree_corrected is True:
         for h in range(len(nh)):
             idx = np.where(user_clustering==h)[0]
             for i in idx:
-                out += lgamma(degree_param+dg_u[i]+eps)
-            out -= lgamma(nh[h]*degree_param+dg_cl_u[h]+eps)
+                out += lgamma(degree_param_users+dg_u[i]+eps)
+            out -= lgamma(nh[h]*degree_param_users+dg_cl_u[h]+eps)
             out += (dg_cl_u[h]*np.log(nh[h]))
+            out += lgamma(nh[h]*degree_param_users)
+            out -= (nh[h]*lgamma(degree_param_users))
             
         for k in range(len(nk)):
             idx = np.where(item_clustering==k)[0]
             for i in idx:
-                out += lgamma(degree_param+dg_i[i]+eps)
-            out -= lgamma(nk[k]*degree_param+dg_cl_i[k]+eps)
+                out += lgamma(degree_param_items+dg_i[i]+eps)
+            out -= lgamma(nk[k]*degree_param_items+dg_cl_i[k]+eps)
             out += (dg_cl_i[k]*np.log(nk[k]))
-                        
+            out += lgamma(nk[k]*degree_param_items)
+            out -= (nk[k]*lgamma(degree_param_items))
+                                
     for h in range(len(nh)):
         for k in range(len(nk)):
             out += lgamma(mhk[h, k]+a+eps)-(mhk[h,k]+a)*np.log((nh[h]*nk[k]+b))
@@ -284,37 +288,6 @@ def compute_co_clustering_matrix(mcmc_draws_users):
                     co_clustering_matrix_users[user_one, user_two] += 1
 
     return co_clustering_matrix_users
-
-@nb.jit(nopython=True, fastmath=True)
-def compute_log_likelihood(a, b, nh, nk, eps, mhk, user_clustering, item_clustering, dg_u, dg_i, dg_cl_u, dg_cl_i, degree_param_users=0.5, degree_param_items=0.5, degree_corrected=False):
-    out = 0.0
-    if degree_corrected is True:
-        for h in range(len(nh)):
-            idx = np.where(user_clustering==h)[0]
-            for i in idx:
-                out += lgamma(degree_param_users+dg_u[i]+eps)
-            out -= lgamma(nh[h]*degree_param_users+dg_cl_u[h]+eps)
-            out += (dg_cl_u[h]*np.log(nh[h]))
-            out += lgamma(nh[h]*degree_param_users)
-            out -= (nh[h]*lgamma(degree_param_users))
-            
-        for k in range(len(nk)):
-            idx = np.where(item_clustering==k)[0]
-            for i in idx:
-                out += lgamma(degree_param_items+dg_i[i]+eps)
-            out -= lgamma(nk[k]*degree_param_items+dg_cl_i[k]+eps)
-            out += (dg_cl_i[k]*np.log(nk[k]))
-            out += lgamma(nk[k]*degree_param_items)
-            out -= (nk[k]*lgamma(degree_param_items))
-                                
-    for h in range(len(nh)):
-        for k in range(len(nk)):
-            out += lgamma(mhk[h, k]+a+eps)-(mhk[h,k]+a)*np.log((nh[h]*nk[k]+b))
-    return out
-
-
-
-
 
 
 
