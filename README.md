@@ -16,8 +16,7 @@ The codebase serves two main purposes:
 ### Data
 The dataset is not stored in this repository due to its size. However:
 - A **script is provided** to preprocess and build the dataset from the raw files.
-- The raw Goodreads ratings data can be downloaded from [link to dataset].
-- Preprocessing includes filtering, network construction, and transformation into the bipartite graph structure used in this study.
+- The raw Goodreads ratings data can be downloaded from [this page](https://cseweb.ucsd.edu/~jmcauley/datasets/goodreads.html) (called 'goodreads_interactions_dedup.json').
 
 ### Key Features
 - Bayesian nonparametric modeling of bipartite user-item networks.
@@ -64,7 +63,26 @@ conda activate REC-ESBM
 ---
 
 ## Usage
-1. Preprocess the data:
+1. Preprocess the data: place Goodreads dataset in data/raw and run
 ```bash
 python src/pipeline/pre_processing_functs.py
 ``` 
+Note:
+- this is not needed for simulations
+- requires internet connection
+- may be quite slow
+
+2. Run simulations
+```bash
+python src/analysis/simulations.py\
+```
+3. Run data analysis:
+```bash
+python src/analysis/book_analysis.py
+```
+Note: this takes A LOT of time
+
+To run the whole analysis with one command run
+```bash
+make all
+```

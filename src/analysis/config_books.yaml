@@ -4,7 +4,7 @@ general_params: &general_params
   bar_h_users: 2
   bar_h_items: 2
   n_iters: 1500
-  burn_in: 250
+  burn_in: 200
   thinning: 2
   k: 10
   seed: 1
@@ -30,15 +30,15 @@ params_variants:
     <<: *baseline
     degree_param_users: 10
     degree_param_items: 10
-    scheme_param: 2
+    scheme_param: 5
     scheme_type: DP
 
   py:
     <<: *baseline
     degree_param_users: 10
     degree_param_items: 10
-    scheme_param: 2
-    sigma: 0.1
+    scheme_param: -0.2
+    sigma: 0.5
     scheme_type: PY
 
   gn:
@@ -52,15 +52,15 @@ params_variants:
     <<: *baseline
     degree_param_users: 2
     degree_param_items: 2
-    scheme_param: 2
+    scheme_param: 5
     scheme_type: DP
 
   py_cov:
     <<: *baseline
     degree_param_users: 2
     degree_param_items: 2
-    scheme_param: 1.3
-    sigma: 0.1
+    scheme_param: -0.2
+    sigma: 0.5
     scheme_type: PY
 
   gn_cov:

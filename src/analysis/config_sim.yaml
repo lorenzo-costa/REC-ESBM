@@ -1,12 +1,12 @@
 general_params: &general_params
-  num_users: 100
-  num_items: 100
-  bar_h_users: 8
-  bar_h_items: 5
+  num_users: 200
+  num_items: 200
+  bar_h_users: 4
+  bar_h_items: 4
 
 run_settings:
-  num_iters: 200
-  burn_in: 50
+  num_iters: 8000
+  burn_in: 4000
   k: 10
   thinning: 1
   n_runs: 2
@@ -25,7 +25,7 @@ params_init:
   scheme_param: 1
   sigma: -0.9
   epsilon: !!float 1e-30
-  gamma: 0.9
+  gamma: 10
   alpha_c: [1.5, 1.5, 1.5, 1.5, 1.5]
 
 params_baseline: &baseline
@@ -48,7 +48,7 @@ params_variants:
     degree_param_users: 10
     degree_param_items: 10
     scheme_param: 2
-    sigma: 0.329
+    sigma: 0.5
     scheme_type: DP
 
   py:
