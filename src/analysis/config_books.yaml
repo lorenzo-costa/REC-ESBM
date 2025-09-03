@@ -1,10 +1,10 @@
 general_params: &general_params
-  num_users: 100
-  num_items: 100
+  num_users: 1000
+  num_items: 1000
   bar_h_users: 2
   bar_h_items: 2
-  n_iters: 200
-  burn_in: 50
+  n_iters: 1500
+  burn_in: 250
   thinning: 2
   k: 10
   seed: 1

@@ -4,6 +4,7 @@ import concurrent.futures
 
 def fetch_and_parse_genres(book):
     """Fetches and parses genres for a single book's URL."""
+    
     url = book.get('link')
     if not url:
         print("Warning: Book entry missing 'link'")

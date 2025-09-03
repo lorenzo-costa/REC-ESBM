@@ -19,7 +19,7 @@ import yaml
 dataset_clean = pd.read_csv('data/processed/dataset_clean.csv')
 
 # Load settings
-with open("src/analysis/functions/config_books.yaml", "r") as f:
+with open("src/analysis/config_books.yaml", "r") as f:
     config = yaml.safe_load(f)
     
 n_users = config["general_params"]["num_users"]

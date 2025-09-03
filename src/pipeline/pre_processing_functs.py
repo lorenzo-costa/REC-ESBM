@@ -10,17 +10,21 @@ from tabnanny import verbose
 
 
 def load_data(file_name, start, end):
-    """
-    Takes a gzip file and loads as JSON. Can load only part of the file.
-    Args:
-        file_name (str): Path to the gzip-compressed file
-        start (int): The starting line number (0-based, inclusive) from which to begin loading data.
-        end (int): The ending line number (0-based, inclusive) at which to stop loading data.
-    Returns:
-        list: A list of Python objects parsed from the specified range of lines in the file.
-    Raises:
-        OSError: If the file cannot be opened.
-        json.JSONDecodeError: If a line cannot be parsed as JSON.
+    """Loads a gzip file as JSON object.
+
+    Parameters
+    ----------
+    file_name : str
+        Path to the gzip-compressed file
+    start : int
+        The starting line number (0-based, inclusive) from which to begin loading data.
+    end : int
+        The maximum number of lines to process (0-based, inclusive).
+
+    Returns
+    -------
+    list
+        A list of JSON objects loaded from the specified range of lines.
     """
     
     count = 0
@@ -38,15 +42,23 @@ def load_data(file_name, start, end):
     return data
 
 def process_data(dir, stop, step, verbose=False):
-    """
-    Loads gzip file and extracts IDs of user-book pairs where book is read. 
-    Batching is used to avoid memory errors for large files.
-    Args:
-        dir (str): The directory containing the gzip file.
-        stop (int): The maximum number of lines to process.
-        step (int): The number of lines to process in each batch.
-    Returns:
-        list: A list of user ID and book ID counts.
+    """Loads a gzip file and return user-book pairs where book is read
+
+    Parameters
+    ----------
+    dir : str
+        Directory containing the gzip file
+    stop : int
+        Maximum number of lines to process
+    step : int
+        Number of lines to process in each batch
+    verbose : bool, optional
+        If True, print progress messages, by default False
+
+    Returns
+    -------
+    tuple
+        A tuple containing the user IDs and book IDs.
     """
     
     temp = [0]
@@ -86,6 +98,31 @@ def process_data(dir, stop, step, verbose=False):
     return out_users, out_books
 
 def find_relevant_ratings(dir, to_take_u, to_take_b, start=0, stop=100, step = 1, verbose=False):
+    """Find relevant ratings for user-book pairs.
+
+    Parameters
+    ----------
+    dir : str
+        Directory containing the gzip file
+    to_take_u : list
+        List of user IDs to consider
+    to_take_b : list
+        List of book IDs to consider
+    start : int, optional
+        Starting line number (0-based, inclusive), by default 0
+    stop : int, optional
+        Stopping line number (0-based, inclusive), by default 100
+    step : int, optional
+        Number of lines to process in each batch, by default 1
+    verbose : bool, optional
+        If True, print progress messages, by default False
+
+    Returns
+    -------
+    tuple
+        A tuple containing the relevant ratings, user IDs, and book IDs.
+    """
+    
     temp = [0]
     start = 0
     count = 0
