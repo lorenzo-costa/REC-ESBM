@@ -2,3 +2,6 @@
 __pycache__/
 data/
 .DS_Store
+
+# utility for making clean yml file
+package_import.py
