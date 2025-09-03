@@ -1,9 +1,9 @@
 # Extended Stochastic Block Models for Recommender Systems
 
-This repository contains code and resources developed for my Master’s Thesis proposting an extension of **Extended Stochastic Block Model** (Legramanti et al. 2020) tailored for recommendser systems.
+This repository contains code and resources developed for my Master’s Thesis proposting an extension of **Extended Stochastic Block Model** (Legramanti et al. 2020) tailored for recommendser systems. In particular, we introduce the **Degree-Corrected Extended Stochastic Block Model (DC-ESBM)**, which captures user/item popularity heterogeneity while leveraging nonparametric Bayesian modeling for community detection.
 
-In particular, we introduce the **Degree-Corrected Extended Stochastic Block Model (DC-ESBM)**, which captures user/item popularity heterogeneity while leveraging nonparametric Bayesian modeling for community detection.
-
+---
+## Project Description
 Key contributions:
 - Extension of **ESBMs** to weighted, bipartite graphs.
 - **Degree correction** for modeling popularity differences.
@@ -17,11 +17,9 @@ Recommendation algorithms decide what we watch, read, or buy but they are often 
 ## 📂 Repository Structure
 
 ```text
-├── data/                # Datasets or links to download
-├── src/                 # Core modeling code
-│   ├── esbm.py          # Base ESBM implementation
-│   ├── dc_esbm.py       # Degree-Corrected ESBM
-│   └── inference.py     # Gibbs sampling and inference routines
-├── notebooks/           # Analysis & experiment notebooks
-├── results/             # Generated figures, evaluation results
-└── README.md            # This file
+├── data/               # Raw and processed datasets
+├── results/            # Generated figures and tables
+├── src/                # Analysis and pipeline scripts
+│   ├── analysis/       # Modeling and statistical methods
+│   └── pipeline/       # Data loading and preprocessing
+└── README.md           # This file
