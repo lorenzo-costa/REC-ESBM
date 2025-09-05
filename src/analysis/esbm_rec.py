@@ -2,7 +2,7 @@ from baseline import Baseline
 import numpy as np
 from math import lgamma
 
-from nb_functions import sampling_scheme, compute_log_prob, compute_log_probs_cov
+from analysis.numba_functions import sampling_scheme, compute_log_prob, compute_log_probs_cov
 #########################
 # ESBM 
 #######################

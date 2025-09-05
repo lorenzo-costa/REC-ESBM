@@ -1,6 +1,6 @@
 from esbm_rec import esbm
 import numpy as np
-from nb_functions import sampling_scheme, compute_log_prob, compute_log_probs_cov, compute_log_likelihood
+from analysis.numba_functions import sampling_scheme, compute_log_prob, compute_log_probs_cov, compute_log_likelihood
 import time
 from math import lgamma
 ########################
