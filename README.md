@@ -1,6 +1,6 @@
 # Extended Stochastic Block Models for Recommender Systems
 
-Code for my Matser's thesis extending **Extended Stochastic Block Model** (Legramanti et al. 2020) to recommender systems.  for recommendser systems.
+Code for my Matser's thesis adapting **Extended Stochastic Block Model** (Legramanti et al. 2020) to recommender systems. 
 
 ---
 ## Project Description
