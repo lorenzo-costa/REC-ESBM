@@ -11,31 +11,6 @@ from analysis.numba_functions import compute_co_clustering_matrix
 #########################################
 # baseline class
 ########################################
-
-# Inputs:
-#     - number of users (required)
-#     - number of items (required)
-#     - n_clusters_users: number of clusters in the users (if None default to num_users)
-#     - n_clusters_items: number of clusters in the items (if None default to num_items)
-#     - prior_a: shape parameter for gamma prior (default to 1)
-#     - prior_b: rate parameter for gamma prior (defaults to 1)
-#     - user_clustering: cluster structure for users. if 'random' generate it from the prior
-#       if None
-#     - item_clustering: cluster structure for items (if None automatically assigned)
-#     - Y: adjacency matrix (if None automatically generated)
-#     - theta: mean parameter for the Poisson distribution (if None automatically generated)
-#     - scheme_type: prior type. Possible choices are DP (dirichlet process), PY (pitman-yor process), GN (gnedin process), DM (dirichlet-multinomial model)
-#     - scheme_param: additional parameter for cluster prior
-#     - sigma: sigma parameter for Gibbs-type prior
-#     - bar_h_users: maximum number of clusters for DM model
-#     - bar_h_items: maximum number of clusters for DM model
-#     - gamma: degree-correction factor (relevant only for DC model)
-#     - cov_users: covariates for users. format should be a list of tuples (covname_covtype, covvalues) 
-#       (note only cov type supported is categorical)
-#     - cov_items: covariates for item. format should be a list of tuples (covname_covtype, covvalues)
-#       (note only cov type supported is categorical)
-#     - alpha: vector of additional parameters for covariate model (if int defaults to vector of equal numbers) 
-    
 class Baseline:
     """Baseline ESBM model
 
