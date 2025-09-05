@@ -7,6 +7,20 @@ from scipy.cluster.hierarchy import linkage, cut_tree
 from scipy.spatial.distance import squareform
 
 def VI(cls, cls_draw):
+    """Compute Variation of Information (VI) between two clusterings.
+
+    Parameters
+    ----------
+    cls : np.array
+        Cluster assignments to compare against.
+    cls_draw : np.array
+        Cluster assignments drawn from the posterior.
+
+    Returns
+    -------
+    output : np.ndarray
+        Variation of Information (VI) between the two clusterings.
+    """
     if cls.ndim == 1:
         cls = cls.reshape(1, -1)  # Convert vector to row matrix
     
@@ -34,9 +48,21 @@ def VI(cls, cls_draw):
 
 
 def VI_lb(clustering, psm):
+    """Calculate the Variation of Information lower bound for a clustering.
+
+    Parameters
+    ----------
+    clustering : np.array
+        Cluster assignments to evaluate.
+    psm : np.array
+        Posterior similarity matrix.
+
+    Returns
+    -------
+    float
+        Variation of Information lower bound.
     """
-    Calculate the Variation of Information lower bound for a clustering.
-    """
+    
     n = len(clustering)
     vi = 0
     
@@ -61,8 +87,23 @@ def VI_lb(clustering, psm):
     return vi
 
 def minVI(psm, cls_draw=None, method="avg", max_k=None):
-    """
-    Minimize Variation of Information (VI) for cluster assignments based on posterior similarity matrix.
+    """Compute the clustering minimising the VI following Wade and Ghahramani (2018).
+
+    Parameters
+    ----------
+    psm : np.array
+        Posterior similarity matrix.
+    cls_draw : np.array, optional
+        Cluster assignments drawn from the posterior, by default None
+    method : str, optional
+        Method to use for minimization, by default "avg"
+    max_k : int, optional
+        Maximum number of clusters to consider for greedy optimization, by default int(np.ceil(psm.shape[0] / 8))
+
+    Returns
+    -------
+    dict
+        Dictionary containing the best cluster assignments and their corresponding VI value.
     """
     
     results = {}

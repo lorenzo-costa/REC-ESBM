@@ -31,14 +31,14 @@ from nb_functions import sampling_scheme, compute_log_prob, compute_log_probs_co
 #     - alpha: vector of additional parameters for covariate model (if int defaults to vector of equal numbers) 
  
 class esbm(Baseline):
-    def __init__(self, num_items, num_users, n_clusters_items=None, n_clusters_users=None,
+    def __init__(self, num_items, num_users,
                  prior_a=1, prior_b=1, seed = 42, user_clustering=None, item_clustering=None,
                  Y=None, theta = None, scheme_type = None, scheme_param = None,
                  sigma = None, bar_h_users=None, bar_h_items=None, gamma=None,
                  epsilon = 1e-6, verbose_users=False, verbose_items = False, device='cpu', 
                  cov_users=None, cov_items=None, alpha_c=1, degree_param_users=1, degree_param_items=1):
 
-        super().__init__(num_items=num_items, num_users=num_users, n_clusters_items=n_clusters_items, n_clusters_users=n_clusters_users,
+        super().__init__(num_items=num_items, num_users=num_users,
                  prior_a=prior_a, prior_b=prior_b, seed = seed, user_clustering=user_clustering, item_clustering=item_clustering,
                  Y=Y, theta = theta, scheme_type = scheme_type, scheme_param = scheme_param, sigma = sigma, bar_h_users=bar_h_users,
                  bar_h_items=bar_h_items, gamma=gamma, epsilon = epsilon, verbose_items=verbose_items, verbose_users=verbose_users,
@@ -418,27 +418,3 @@ class esbm(Baseline):
                 
         self.predict_mode = 'k'
         return out
-    
-    ############
-    # compute log-likelihood for each edge at a given iteration
-    def compute_llk(self, iter):
-        np.random.seed(self.seed)
-        
-        clustering_users = self.mcmc_draws_users[iter]
-        clustering_items = self.mcmc_draws_items[iter]
-        frequencies_users = self.mcmc_draws_users_frequencies[iter]
-        frequencies_items = self.mcmc_draws_items_frequencies[iter]
-        
-        mhk = self.compute_mhk(clustering_users, clustering_items)
-        # first sample theta
-        theta = np.random.gamma(self.prior_a+mhk, 
-                                1/(self.prior_b+np.outer(frequencies_users, frequencies_items)))
-        
-        # log likelihood
-        llk_out = []
-        for u in range(self.num_users):
-            for i in range(self.num_items):
-                zu = clustering_users[u]
-                qi = clustering_items[i]
-                llk_out.append(self.Y[u,i]*np.log(theta[zu, qi])-theta[zu,qi]-lgamma(self.Y[u,i]+1))
-        return llk_out

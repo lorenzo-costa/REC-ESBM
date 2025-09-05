@@ -37,27 +37,115 @@ from nb_functions import compute_co_clustering_matrix
 #     - alpha: vector of additional parameters for covariate model (if int defaults to vector of equal numbers) 
     
 class Baseline:
-    def __init__(self, num_items, num_users, 
-                 n_clusters_items=None, n_clusters_users=None,
-                 prior_a=1, prior_b=1, 
-                 seed = 42, 
-                 user_clustering=None, item_clustering=None,
-                 Y=None, theta = None, 
-                 alpha_c=1, cov_users=None, cov_items=None,
-                 scheme_type = None, scheme_param = None, sigma = None, 
-                 bar_h_users=None, bar_h_items=None, 
-                 gamma=None,
-                 epsilon = 1e-6, verbose_users=False, verbose_items = False, 
-                 device='cpu', 
-                 degree_param_users=1, degree_param_items=1):
-        
-        ###########################
-        #argument checks
-        if n_clusters_items is None:
-            n_clusters_items = num_items
-        if n_clusters_users is None:
-            n_clusters_users = num_users
+    """Baseline ESBM model
 
+    Parameters
+    ----------
+    num_items : int
+        number of items
+    num_users : int
+        number of users
+    user_clustering : list or array-like
+        cluster assignments for users, by default None. If 'random' generate it from the prior, if None
+        assign each user to its own cluster
+    item_clustering : list or array-like
+        cluster assignments for items, by default None. If 'random' generate it from the prior, if None
+        assign each item to its own cluster
+    Y : 2D array
+        adjacency matrix (if None automatically generated), by default None
+    theta : (2D array)
+        mean parameter for the Poisson distribution (if None automatically generated)
+    prior_a : float
+        shape parameter for gamma prior, by default 1
+    prior_b : float
+        rate parameter for gamma prior, by default 1
+    scheme_type : str
+        prior type. Possible choices are DP (dirichlet process), PY (pitman-yor process), 
+        GN (gnedin process), DM (dirichlet-multinomial model)
+    scheme_param : float
+        additional parameter for cluster prior, by default None
+    sigma : float
+        sigma parameter for Gibbs-type prior, by default None
+    gamma : float
+        additional parameter for GN model, by default None
+    bar_h_users : int
+        maximum number of clusters for DM model, by default None
+    bar_h_items : int
+        maximum number of clusters for DM model, by default None
+    degree_param_users : float
+        degree-correction parameter for users (relevant only for DC model), by default 1
+    degree_param_items : float
+        degree-correction parameter for items (relevant only for DC model), by default 1
+    alpha_c : float or list
+        additional parameter for categorical covariate model (if int defaults to vector of equal numbers), by default 1
+    cov_users : list
+        list of tuples (covname_covtype, covvalues) for user covariates, by default None
+    cov_items : list
+        list of tuples (covname_covtype, covvalues) for item covariates, by default None
+    verbose_users : bool
+        whether to print verbose output for user-related computations, by default False
+    verbose_items : bool
+        whether to print verbose output for item-related computations, by default False
+    device : str
+        device to use (cpu or gpu), by default 'cpu'
+    
+    Attributes
+    ----------
+    Y : 2D array
+        adjacency matrix
+    num_items : int
+        number of items
+    num_users : int
+        number of users
+    n_clusters_users : int
+        number of clusters in the users
+    n_clusters_items : int
+        number of clusters in the items
+    train_llk : 1D array 
+        log-likelihood values during training
+    mcmc_draws_users : 2D array
+        MCMC samples of user cluster assignments during training
+    mcmc_draws_items : 2D array
+        MCMC samples of item cluster assignments during training
+    estimated_items : str
+        method used for estimating item clusters
+    estimated_users : str
+        method used for estimating user clusters
+    estimated_theta : 2D array
+        estimated mean parameter for the Poisson distribution
+    llk_edges : 1D array
+        log-likelihood values for each edge
+    waic : float
+        WAIC value
+    """
+    
+    def __init__(self, 
+                 num_items, 
+                 num_users, 
+                 user_clustering=None, 
+                 item_clustering=None,
+                 Y=None, 
+                 theta = None,
+                 prior_a=1, 
+                 prior_b=1, 
+                 scheme_type = None, 
+                 scheme_param = None, 
+                 sigma = None, 
+                 gamma=None,
+                 bar_h_users=None, 
+                 bar_h_items=None, 
+                 degree_param_users=1, 
+                 degree_param_items=1,
+                 alpha_c=1, 
+                 cov_users=None, 
+                 cov_items=None,
+                 epsilon = 1e-6,
+                 seed = 42,  
+                 verbose_users=False, 
+                 verbose_items = False, 
+                 device='cpu'):
+        
+        # a lot of type and value checking
         if scheme_type is None:
             raise Exception('please provide scheme type')
         
@@ -131,8 +219,7 @@ class Baseline:
         if cov_items is not None:
             self.cov_names_items, self.cov_types_items, self.cov_values_items = self.process_cov(cov_items)
         
-        # if not clustering structure create it
-        
+        # clustering structure not provided create it
         if user_clustering is None:
                 self.user_clustering = [i for i in range(self.num_users)]    
         elif user_clustering == 'random':
@@ -150,7 +237,7 @@ class Baseline:
         #computes cluster metrics needed later 
         self.process_clusters(self.user_clustering, self.item_clustering)
         
-        # if not theta is provided generate it
+        # theta not provided generate it
         if self.theta is None:
             self.theta = np.random.gamma(1,1, size = (self.n_clusters_users, self.n_clusters_items))
         
@@ -164,16 +251,25 @@ class Baseline:
         else:
             self.cov_nch_items = None
             
-        # if no adj matrix is given generate it
+        # if adjancecy matrix not given generate it
         if Y is None:
             print('randomly initialising data')
             self.generate_data()
         else:
             self.Y = Y
         
-    ##########
-    # function to compute cluster metrics
+
     def process_clusters(self, user_clustering, item_clustering):
+        """Computes cluster metrics.
+
+        Parameters
+        ----------
+        user_clustering : list or array-like
+            Cluster assignments for users.
+        item_clustering : list or array-like
+            Cluster assignments for items.
+        """
+        
         occupied_clusters_users, frequencies_users = np.unique(user_clustering, return_counts=True)
         self.frequencies_users = frequencies_users
         self.n_clusters_users = len(occupied_clusters_users)
@@ -184,27 +280,46 @@ class Baseline:
         self.n_clusters_items = len(occupied_clusters_items)
         self.item_clustering = np.array(item_clustering)
     
-    ########
-    # function to generate adjacency matrix
+    
     def generate_data(self):
+        """Generates random data according to the model.
+        """
+        
         np.random.seed(self.seed)
         # Y params collects the appropriate theta entries accoridng to cluster structure
         Y_params = self.theta[self.user_clustering][:, self.item_clustering]
-        # Y drawn from poisson distribution
         Y = np.random.poisson(Y_params)
         self.Y = Y.copy()
         return
     
-    ##########
-    # function to initialise clusters according to prior
     def init_cluster_random(self, user_clustering=None, item_clustering=None):
+        """Initialises random clustering structure according to the prior.
+
+        Parameters
+        ----------
+        user_clustering : list, optional
+            Initial user clustering, by default None
+        item_clustering : list, optional
+            Initial item clustering, by default None
+
+        Returns
+        -------
+        user_clustering : list
+            Final user clustering.
+        item_clustering : list
+            Final item clustering.
+        """
+        
         np.random.seed(self.seed)
+        # note this if is used becuase we may have only one of the two being random
         if user_clustering == 'random':
             user_clustering = [0]
             H = 1
             V = 1
             users_frequencies = [1]
+            
             print('initialsing user clusters random')
+            
             nch_users = None
             if self.cov_users is not None:
                 nch_users = []
@@ -216,7 +331,7 @@ class Baseline:
                     nch_users.append(temp.reshape(-1, 1))
                     
             for u in range(1, self.num_users):
-                # order should be guaranteed by properties of dict in pyhton
+                # prior contribution
                 probs = sampling_scheme(V, H, users_frequencies, bar_h=self.bar_h_users, scheme_type=self.scheme_type,
                                         scheme_param=self.scheme_param, sigma=self.sigma, gamma=self.gamma)
                 log_probs_cov = 0
@@ -231,6 +346,7 @@ class Baseline:
                 
                 assignment = np.random.choice(len(probs), p=probs)
                 if assignment >= H:
+                    # make new cluster
                     H += 1
                     users_frequencies.append(1)
                     
@@ -262,7 +378,9 @@ class Baseline:
             K = 1
             V = 1
             items_frequencies = [1]
+            
             print('initialising item clusters random')
+            
             nch_items = None
             if self.cov_items is not None:
                 nch_items = []
@@ -287,6 +405,7 @@ class Baseline:
                             
                 assignment = np.random.choice(len(probs), p=probs)
                 if assignment >= K:
+                    # make new cluster
                     K += 1
                     items_frequencies.append(1)
                     
@@ -315,15 +434,28 @@ class Baseline:
         
         return user_clustering, item_clustering
     
-    ###########
-    # compute mhk matrix suing fast sparse matrix multiplication
     def compute_mhk(self, user_clustering=None, item_clustering=None):
+        """Computes the MHK matrix using (fast) sparse matrix multiplication.
+
+        Parameters
+        ----------
+        user_clustering : list, optional
+            Clustering of users, by default None
+        item_clustering : list, optional
+            Clustering of items, by default None
+
+        Returns
+        -------
+        mhk : np.array
+            MHK matrix
+        """
+        
         if user_clustering is None:
             user_clustering = self.user_clustering
             num_users = self.num_users
             n_clusters_users = self.n_clusters_users
         else:
-            num_users = len(self.user_clustering)
+            num_users = len(user_clustering)
             n_clusters_users = len(np.unique(user_clustering))
             
         if item_clustering is None:
@@ -331,7 +463,7 @@ class Baseline:
             num_items = self.num_items
             n_clusters_items = self.n_clusters_items
         else:
-            num_items = len(self.item_clustering)
+            num_items = len(item_clustering)
             n_clusters_items = len(np.unique(item_clustering))
         
         user_clusters = sparse.csr_matrix(
@@ -348,10 +480,15 @@ class Baseline:
 
         mhk = user_clusters.T @ self.Y @ item_clusters
         return mhk
-    
-    ###########
-    # compute yuk matrix using fast sparse matrix multiplication 
+     
     def compute_yuk(self):
+        """Computes the YUK matrix.
+
+        Returns
+        -------
+        yuk : np.array
+            YUK matrix
+        """
         item_clusters = sparse.csr_matrix(
             (np.ones(self.num_items),
             (range(self.num_items),
@@ -361,9 +498,14 @@ class Baseline:
         yuk = self.Y @ item_clusters
         return yuk
     
-    ###########
-    # compute yih matrix using fast sparse matrix multiplication 
     def compute_yih(self):
+        """Computes the YIH matrix.
+
+        Returns
+        -------
+        yih : np.array
+            YIH matrix
+        """
         user_clusters = sparse.csr_matrix(
             (np.ones(self.num_users),
             (range(self.num_users),
@@ -373,9 +515,22 @@ class Baseline:
         yih = self.Y.T @ user_clusters
         return yih
     
-    ################
-    # from list of covariates extracts the name, type and values
+    
     def process_cov(self, cov_list):
+        """Processes a list of covariates.
+
+        Parameters
+        ----------
+        cov_list : list of tuples
+            list of tuples (covname_covtype, covvalues)
+
+        Returns
+        -------
+        tuple: (cov_names, cov_types, cov_values)
+            cov_names: list of covariate names
+            cov_types: list of covariate types
+            cov_values: list of covariate values
+        """
         cov_names = []
         cov_types = []
         cov_values = []
@@ -385,10 +540,24 @@ class Baseline:
             cov_types.append(cov_type)
             cov_values.append(cov[1])             
         return cov_names, cov_types, cov_values
-    
-    #############
-    # computes nch matrix (maybe can be made faster using sparse matrices?)    
+     
     def compute_nch(self, cov_values, clustering, n_clusters):
+        """Computes the NCH matrix.
+
+        Parameters
+        ----------
+        cov_values : list
+            list of covariate values
+        clustering : list
+            list of cluster assignments
+        n_clusters : int
+            number of clusters
+
+        Returns
+        -------
+        list
+            list of NCH matrices
+        """
         cov_nch = []
         for cov in range(len(cov_values)):
             uniques = np.unique(cov_values[cov])
@@ -400,15 +569,31 @@ class Baseline:
             cov_nch.append(nch)
         return cov_nch
     
-    ############
-    # man comutation
-    def gibbs_step(self):
-        # do nothing for baseline
-        pass
     
-    ############
-    # loop for fitting the model
+    def gibbs_step(self):
+        """Performs a Gibbs sampling step.
+        """
+        # do nothing for baseline
+        return
+    
     def gibbs_train(self, n_iters, verbose=0):
+        """Trains the model using Gibbs sampling.
+
+        Parameters
+        ----------
+        n_iters : int
+            Number of iterations for Gibbs sampling.
+        verbose : int, optional
+            Verbosity level, by default 0. 0: no output, 1: every 10% of iterations,
+            2: also print frequencies, 3: also print cluster assignments
+
+        Returns
+        -------
+        tuple: (llks, user_cluster_list, item_cluster_list)
+            llks: log-likelihood values during training
+            user_cluster_list: MCMC samples of user cluster assignments during training
+            item_cluster_list: MCMC samples of item cluster assignments during training
+        """
         np.random.seed(self.seed)
         
         self.n_iters = n_iters
@@ -473,10 +658,31 @@ class Baseline:
         
         return llks, user_cluster_list, item_cluster_list
     
-    ###########
-    # estimate cluster assignment using the mode 
-    # (i.e. most visited cluser for each user, item across samples)
+    
     def estimate_cluster_assignment_mode(self, burn_in = 0, thinning = 1):
+        """Estimate cluster assignments using the mode.
+
+        Parameters
+        ----------
+        burn_in : int, optional
+            Number of initial samples to discard, by default 0
+        thinning : int, optional
+            Thinning factor for MCMC samples, by default 1
+
+        Returns
+        -------
+        tuple (user_cluster_assignments, item_cluster_assignments)
+            user_cluster_assignments : np.ndarray
+                Estimated cluster assignments for users
+            item_cluster_assignments : np.ndarray
+                Estimated cluster assignments for items
+
+        Raises
+        ------
+        Exception
+            If the model has not been trained.
+        """
+        
         if self.mcmc_draws_users is None:
             raise Exception('model must be trained first')
         
@@ -502,10 +708,34 @@ class Baseline:
         
         return assignment_users, assignment_items
     
-    ###########
-    # estimate clister assignment minimizing the variation of information
-    # (uses greedy algorithm as described in Wade and Ghahramani (2018))
+    
     def estimate_cluster_assignment_vi(self, method='avg', max_k=None, burn_in=0, thinning=1):
+        """Estimate cluster assignments minimizing the variation of information.
+        
+        Uses a greedy algorithm as described in Wade and Ghahramani (2018))
+
+        Parameters
+        ----------
+        method : str, optional
+            Estimation method to use, by default 'avg'
+        max_k : int, optional
+            Maximum number of clusters to consider for greedy optimization, by default int(np.ceil(psm.shape[0] / 8))
+        burn_in : int, optional
+            Number of initial samples to discard, by default 0
+        thinning : int, optional
+            Thinning factor for MCMC samples, by default 1
+
+        Returns
+        -------
+        dict
+            Dictionary containing the best cluster assignments and their corresponding VI value.
+
+        Raises
+        ------
+        Exception
+            If the model has not been trained.
+        """
+        
         if method not in ['avg', 'comp', 'all']:
             raise Exception('invalid method')
         
@@ -540,9 +770,8 @@ class Baseline:
                 
         return est_cluster_users, est_cluster_items, vi_value_users, vi_value_items
     
-    ##########
-    # aux function to call the optimised function on relevant sample
     def compute_co_clustering_matrix(self, burn_in=0, thinning=1):
+        """Aux function to call the optimised function on relevant sample"""
         if self.mcmc_draws_users is None:
             raise Exception('model must be trained first')
         
@@ -553,30 +782,6 @@ class Baseline:
         self.co_clustering_items = cc_items
         
         return cc_users, cc_items
-    
-    ############
-    # compute log-likelihood for each edge at a given iteration
-    def compute_llk(self, iter):
-        np.random.seed(self.seed)
-        
-        clustering_users = self.mcmc_draws_users[iter]
-        clustering_items = self.mcmc_draws_items[iter]
-        frequencies_users = self.mcmc_draws_users_frequencies[iter]
-        frequencies_items = self.mcmc_draws_items_frequencies[iter]
-        
-        mhk = self.compute_mhk(clustering_users, clustering_items)
-        # first sample theta
-        theta = np.random.gamma(self.prior_a+mhk, 
-                                1/(self.prior_b+np.outer(frequencies_users, frequencies_items)))
-        
-        # log likelihood
-        llk_out = []
-        for u in range(self.num_users):
-            for i in range(self.num_items):
-                zu = clustering_users[u]
-                qi = clustering_items[i]
-                llk_out.append(self.Y[u,i]*np.log(theta[zu, qi])-theta[zu,qi]-np.log(math.factorial(self.Y[u,i])))
-        return llk_out
     
     ##########
     # generate point predictions from estimated parameters

@@ -10,7 +10,7 @@ from valid_functs import validate_models, generate_val_set, multiple_runs
 import yaml
 import pickle
 
-with open("src/analysis/functions/config_sim.yaml", "r") as f:
+with open("src/analysis/config_sim.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 n_users = config["general_params"]["num_users"]
@@ -62,7 +62,7 @@ out = multiple_runs(true_mod=dcesbm,
                     verbose=1, 
                     burn_in=burn_in, 
                     thinning=thinning, 
-                    seed=seed)
+                    seed=seed) 
 
 names_list, mse_list, mae_list, precision_list, recall_list, vi_users_list, vi_items_list, models_list_out = out
 

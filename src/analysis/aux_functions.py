@@ -56,7 +56,6 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
     import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
-    import matplotlib.colors as mcolors
     from matplotlib.patches import Rectangle
     
     if user_covariates is not None:

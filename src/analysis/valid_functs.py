@@ -19,8 +19,8 @@ def validate_models(Y_train,
                     k=10,
                     print_intermid=False,
                     seed=42):    
-    """
-    Fits a list of models on training data and validates them using a validation dataset.
+    """Fits a list of models on training data and validates them using a validation dataset.
+    
     This function trains each model in `model_list` using the provided training data (`Y_train`) and model-specific parameters (`param_list`).
     After training, it evaluates each model on the validation dataset (`Y_val`) using several metrics:
     - Mean Squared Error (MSE)
@@ -69,7 +69,6 @@ def validate_models(Y_train,
     if burn_in is None:
         burn_in = n_iters//2
     
-    ###################
     # prepare val set
     Y_val_pairs = [(u,i) for u,i,_ in Y_val]
     Y_val_users = [u for u,_,_ in Y_val]
@@ -88,7 +87,6 @@ def validate_models(Y_train,
             val_users_relevant[u].append(i)
     val_users_unique = list(val_users_relevant.keys())
     
-    ####################
     # model validations
     model_list_out = []
     for i in range(len(model_list)):

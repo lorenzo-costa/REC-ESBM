@@ -33,7 +33,7 @@ from math import lgamma
 #     - degree_param_items: degree correction parameter for items
   
 class dcesbm(esbm):
-    def __init__(self, num_items, num_users, n_clusters_items=None, n_clusters_users=None,
+    def __init__(self, num_items, num_users,
                  prior_a=1, prior_b=1, seed = 42, user_clustering=None, item_clustering=None,
                  Y=None, theta = None, scheme_type = None, scheme_param = None,
                  sigma = None, bar_h_users=None, bar_h_items=None, gamma=None,
@@ -47,7 +47,7 @@ class dcesbm(esbm):
         self.estimated_phi_users = None
         self.estimated_phi_items = None
  
-        super().__init__(num_items=num_items, num_users=num_users, n_clusters_items=n_clusters_items, n_clusters_users=n_clusters_users,
+        super().__init__(num_items=num_items, num_users=num_users,
                  prior_a=prior_a, prior_b=prior_b, seed = seed, user_clustering=user_clustering, item_clustering=item_clustering,
                  Y=Y, theta = theta, scheme_type = scheme_type, scheme_param = scheme_param, sigma = sigma, bar_h_users=bar_h_users,
                  bar_h_items=bar_h_items, gamma=gamma, epsilon = epsilon, verbose_items=verbose_items, verbose_users=verbose_users,
@@ -499,47 +499,6 @@ class dcesbm(esbm):
             preds.append(self.estimated_theta[zu, qi]*eta_u*eta_i)
 
         return preds
-    
-    def compute_llk(self, iter):
-        np.random.seed(self.seed)
-        
-        clustering_users = self.mcmc_draws_users[iter]
-        clustering_items = self.mcmc_draws_items[iter]
-        frequencies_users = self.mcmc_draws_users_frequencies[iter]
-        frequencies_items = self.mcmc_draws_items_frequencies[iter]
-        degree_users = self.mcmc_draws_degree_users[iter]
-        degree_items = self.mcmc_draws_degree_items[iter]
-        
-        mhk = self.compute_mhk(clustering_users, clustering_items)
-        # first sample theta
-        theta = np.random.gamma(self.prior_a+mhk, 
-                                1/(self.prior_b+np.outer(frequencies_users, frequencies_items)))
-        
-        phi_users = np.zeros(shape=(len(frequencies_users), self.num_users))
-        for h in range(len(frequencies_users)):
-            idx = np.where(clustering_users==h)
-            dir_param = self.degree_param_users + degree_users[idx]
-            phi_users[h, idx] = np.random.dirichlet(dir_param)
-        
-        phi_items = np.zeros(shape=(len(frequencies_items), self.num_items))
-        for k in range(len(frequencies_items)):
-            idx = np.where(clustering_items==k)
-            dir_param = self.degree_param_items + degree_items[idx]
-            phi_items[k, idx] = np.random.dirichlet(dir_param)
-        
-        # log likelihood
-        llk_out = []
-        for u in range(self.num_users):
-            for i in range(self.num_items):
-                zu = clustering_users[u]
-                qi = clustering_items[i]                
-                eta_u = frequencies_users[zu]*phi_users[zu, u]
-                eta_i = frequencies_items[qi]*phi_items[qi, i]
-
-                llk_out.append(self.Y[u,i]*np.log(eta_u*eta_i*theta[zu, qi]+self.epsilon)-theta[zu,qi]*eta_u*eta_i-lgamma(self.Y[u,i]+1))
-        
-        return llk_out
-    
         
     def predict_k(self, users, k=10, seed=42, ignore_seen=True):
         if seed is None:
