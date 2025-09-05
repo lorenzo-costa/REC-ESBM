@@ -31,23 +31,119 @@ from nb_functions import sampling_scheme, compute_log_prob, compute_log_probs_co
 #     - alpha: vector of additional parameters for covariate model (if int defaults to vector of equal numbers) 
  
 class esbm(Baseline):
-    def __init__(self, num_items, num_users,
-                 prior_a=1, prior_b=1, seed = 42, user_clustering=None, item_clustering=None,
-                 Y=None, theta = None, scheme_type = None, scheme_param = None,
-                 sigma = None, bar_h_users=None, bar_h_items=None, gamma=None,
-                 epsilon = 1e-6, verbose_users=False, verbose_items = False, device='cpu', 
-                 cov_users=None, cov_items=None, alpha_c=1, degree_param_users=1, degree_param_items=1):
+    """Bipartite Extended Stochastic Block Model (ESBM) with Poisson likelihood.
 
-        super().__init__(num_items=num_items, num_users=num_users,
-                 prior_a=prior_a, prior_b=prior_b, seed = seed, user_clustering=user_clustering, item_clustering=item_clustering,
-                 Y=Y, theta = theta, scheme_type = scheme_type, scheme_param = scheme_param, sigma = sigma, bar_h_users=bar_h_users,
-                 bar_h_items=bar_h_items, gamma=gamma, epsilon = epsilon, verbose_items=verbose_items, verbose_users=verbose_users,
-                 device=device, alpha_c=alpha_c, cov_users=cov_users, cov_items=cov_items, 
-                 degree_param_users=degree_param_users, degree_param_items=degree_param_items)
+    Parameters
+    ----------
+    num_items : int
+        number of items
+    num_users : int
+        number of users
+    user_clustering : list or array-like
+        cluster assignments for users, by default None. If 'random' generate it from the prior, if None
+        assign each user to its own cluster
+    item_clustering : list or array-like
+        cluster assignments for items, by default None. If 'random' generate it from the prior, if None
+        assign each item to its own cluster
+    Y : 2D array
+        adjacency matrix (if None automatically generated), by default None
+    theta : (2D array)
+        mean parameter for the Poisson distribution (if None automatically generated)
+    prior_a : float
+        shape parameter for gamma prior, by default 1
+    prior_b : float
+        rate parameter for gamma prior, by default 1
+    scheme_type : str
+        prior type. Possible choices are DP (dirichlet process), PY (pitman-yor process), 
+        GN (gnedin process), DM (dirichlet-multinomial model)
+    scheme_param : float
+        additional parameter for cluster prior, by default None
+    sigma : float
+        sigma parameter for Gibbs-type prior, by default None
+    gamma : float
+        additional parameter for GN model, by default None
+    bar_h_users : int
+        maximum number of clusters for DM model, by default None
+    bar_h_items : int
+        maximum number of clusters for DM model, by default None
+    degree_param_users : float
+        degree-correction parameter for users (relevant only for DC model), by default 1
+    degree_param_items : float
+        degree-correction parameter for items (relevant only for DC model), by default 1
+    alpha_c : float or list
+        additional parameter for categorical covariate model (if int defaults to vector of equal numbers), by default 1
+    cov_users : list
+        list of tuples (covname_covtype, covvalues) for user covariates, by default None
+    cov_items : list
+        list of tuples (covname_covtype, covvalues) for item covariates, by default None
+    verbose_users : bool
+        whether to print verbose output for user-related computations, by default False
+    verbose_items : bool
+        whether to print verbose output for item-related computations, by default False
+    device : str
+        device to use (cpu or gpu), by default 'cpu'
     
-    #########
-    # main computation, performs a single gibbs step for both users and items  
+    Attributes
+    ----------
+    Y : 2D array
+        adjacency matrix
+    num_items : int
+        number of items
+    num_users : int
+        number of users
+    n_clusters_users : int
+        number of clusters in the users
+    n_clusters_items : int
+        number of clusters in the items
+    train_llk : 1D array 
+        log-likelihood values during training
+    mcmc_draws_users : 2D array
+        MCMC samples of user cluster assignments during training
+    mcmc_draws_items : 2D array
+        MCMC samples of item cluster assignments during training
+    estimated_items : str
+        method used for estimating item clusters
+    estimated_users : str
+        method used for estimating user clusters
+    estimated_theta : 2D array
+        estimated mean parameter for the Poisson distribution
+    """
+    def __init__(self,
+                 *, 
+                 num_items=None, 
+                 num_users=None, 
+                 user_clustering=None, 
+                 item_clustering=None,
+                 Y=None, 
+                 theta = None,
+                 prior_a=1, 
+                 prior_b=1, 
+                 scheme_type = None, 
+                 scheme_param = None, 
+                 sigma = None, 
+                 gamma=None,
+                 bar_h_users=None, 
+                 bar_h_items=None, 
+                 degree_param_users=1, 
+                 degree_param_items=1,
+                 alpha_c=1, 
+                 cov_users=None, 
+                 cov_items=None,
+                 epsilon = 1e-6,
+                 seed = 42,  
+                 verbose_users=False, 
+                 verbose_items = False, 
+                 device='cpu'):
+        
+        kwargs = {k: v for k, v in locals().items() if k not in ['self', '__class__']}
+        super().__init__(**kwargs)
+        
+    
     def gibbs_step(self):
+        """Performs a single Gibbs sampling step.
+        
+        """
+        
         frequencies_users = self.frequencies_users
         frequencies_items = self.frequencies_items         
         
@@ -96,14 +192,32 @@ class esbm(Baseline):
                 mhk_minus = mhk.copy()
                 mhk_minus[cluster_user] -= yuk[u]
 
-            # compute prior part
-            probs = sampling_scheme(V, H, frequencies=frequencies_users_minus, bar_h=self.bar_h_users, scheme_type=self.scheme_type, 
-                                    scheme_param=self.scheme_param, sigma=self.sigma, gamma=self.gamma)
+            # compute prior contribution
+            probs = sampling_scheme(V, 
+                                    H, 
+                                    frequencies=frequencies_users_minus, 
+                                    bar_h=self.bar_h_users, 
+                                    scheme_type=self.scheme_type, 
+                                    scheme_param=self.scheme_param, 
+                                    sigma=self.sigma, 
+                                    gamma=self.gamma)
             
             #compute main adj matrix part
-            log_probs = compute_log_prob(probs, mhk_minus=mhk_minus, frequencies_primary_minus=frequencies_users_minus, frequencies_secondary=frequencies_items,
-                                     y_values=np.ascontiguousarray(yuk[u]), epsilon=self.epsilon, a=self.prior_a, b=self.prior_b, max_clusters=H, 
-                                     is_user_mode=True, degree_corrected=False, degree_param=1, degree_cluster_minus=[1], degree_node=1, device=self.device)
+            log_probs = compute_log_prob(probs, 
+                                         mhk_minus=mhk_minus, 
+                                         frequencies_primary_minus=frequencies_users_minus, 
+                                         frequencies_secondary=frequencies_items,
+                                         y_values=np.ascontiguousarray(yuk[u]), 
+                                         epsilon=self.epsilon, 
+                                         a=self.prior_a, 
+                                         b=self.prior_b, 
+                                         max_clusters=H, 
+                                         is_user_mode=True, 
+                                         degree_corrected=False, 
+                                         degree_param=1, 
+                                         degree_cluster_minus=[1], 
+                                         degree_node=1, 
+                                         device=self.device)
             
             # compute covs part       
             log_probs_cov = 0

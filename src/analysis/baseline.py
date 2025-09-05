@@ -113,15 +113,12 @@ class Baseline:
         method used for estimating user clusters
     estimated_theta : 2D array
         estimated mean parameter for the Poisson distribution
-    llk_edges : 1D array
-        log-likelihood values for each edge
-    waic : float
-        WAIC value
     """
     
-    def __init__(self, 
-                 num_items, 
-                 num_users, 
+    def __init__(self,
+                 *, 
+                 num_items=None, 
+                 num_users=None, 
                  user_clustering=None, 
                  item_clustering=None,
                  Y=None, 
@@ -144,10 +141,22 @@ class Baseline:
                  verbose_users=False, 
                  verbose_items = False, 
                  device='cpu'):
-        
+
         # a lot of type and value checking
+        
+        if num_items is None or not isinstance(num_items, int) or num_items <= 0:
+            raise Exception('please provide valid number of items')
+        
+        if num_users is None or not isinstance(num_users, int) or num_users <= 0:
+            raise Exception('please provide valid number of users')
+        
+        if prior_a <= 0 or not isinstance(prior_a, (int, float)):
+            raise Exception('please provide valid prior a parameter (>0)')
+        if prior_b <= 0 or not isinstance(prior_b, (int, float)):
+            raise Exception('please provide valid prior b parameter (>0)')
+
         if scheme_type is None:
-            raise Exception('please provide scheme type')
+            raise Exception('please provide scheme type')        
         
         if scheme_type == 'DM':
             if not isinstance(bar_h_users, int) or (bar_h_users < 0) or (bar_h_users > num_users):
@@ -189,8 +198,8 @@ class Baseline:
         self.gamma = gamma
         self.sigma = sigma
         
-        self.degre_param_users = degree_param_users
-        self.degre_param_items = degree_param_items
+        self.degree_param_users = degree_param_users
+        self.degree_param_items = degree_param_items
         
         self.device = device
         self.alpha_c = alpha_c
@@ -208,11 +217,7 @@ class Baseline:
         self.estimated_users = None
         
         self.estimated_theta = None
-        
-        self.llk_edges = None
-        
-        self.waic = None
-        
+                        
         if cov_users is not None:
             self.cov_names_users, self.cov_types_users, self.cov_values_users = self.process_cov(cov_users)
     
@@ -709,6 +714,7 @@ class Baseline:
         return assignment_users, assignment_items
     
     
+    
     def estimate_cluster_assignment_vi(self, method='avg', max_k=None, burn_in=0, thinning=1):
         """Estimate cluster assignments minimizing the variation of information.
         
@@ -770,6 +776,8 @@ class Baseline:
                 
         return est_cluster_users, est_cluster_items, vi_value_users, vi_value_items
     
+    
+    
     def compute_co_clustering_matrix(self, burn_in=0, thinning=1):
         """Aux function to call the optimised function on relevant sample"""
         if self.mcmc_draws_users is None:
@@ -783,10 +791,24 @@ class Baseline:
         
         return cc_users, cc_items
     
-    ##########
-    # generate point predictions from estimated parameters
-    # takes as input pairs of user-item and outputs predicted rating
+    
+    
     def point_predict(self, pairs, seed=None):
+        """Predict ratings for user-item pairs.
+
+        Parameters
+        ----------
+        pairs : list of tuples
+            List of (user, item) pairs for which to predict ratings.
+        seed : int, optional
+            Random seed for reproducibility, by default None
+
+        Returns
+        -------
+        preds : list
+            List of predicted ratings corresponding to the input pairs.
+        """
+        
         if seed is None:
             np.random.seed(self.seed)
         elif seed == -1:
@@ -798,27 +820,54 @@ class Baseline:
         
         preds = []
         for u, i in pairs:
-            # predict with predictive posterior mean
+            # baseline: predict with predictive posterior mean
             preds.append(np.random.choice(uniques_ratings, p=frequencies_ratings/np.sum(frequencies_ratings)))
 
         return preds
     
-    ##################
-    # for a list of users returns unconsumed items in the cluster with highest score
-    def predict_with_ranking(self, users):        
+    
+    def predict_with_ranking(self, users):
+        """Predict items for users based on cluster with highest score.
+
+        Parameters
+        ----------
+        users : list
+            List of users for whom to predict items.
+
+        Returns
+        -------
+        list
+            List of predicted item indices for each user.
+        """
         top_cluster =[]
         for u in users:
+            # baseline: completely random
             num = np.random.randint(1, self.num_items)
             choice = np.random.choice(self.num_items, num, replace=False)
             top_cluster.append(choice)
 
         return top_cluster
     
-    ############
-    # for a given list of users returns k suggested items
-    def predict_k(self, users, k):        
+    
+
+    def predict_k(self, users, k):
+        """Predict k items for each user based on cluster with highest score.
+
+        Parameters
+        ----------
+        users : list
+            List of users for whom to predict items.
+        k : int
+            Number of items to predict for each user.
+
+        Returns
+        -------
+        list
+            List of predicted item indices for each user.
+        """
         out = []
         for u in users:
+            # baseline: completely random
             choice = np.random.choice(self.num_items, k, replace=False)
             out.append(choice)
 

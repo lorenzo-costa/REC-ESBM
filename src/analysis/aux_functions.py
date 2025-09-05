@@ -51,7 +51,13 @@ def relabel_clusters(cluster_indices):
 
 # function to plot the heatmap representation
 
-def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=True, size=(12,10), capped=None):
+def plot_heatmap(model, 
+                 user_covariates=None, 
+                 item_covariates=None, 
+                 add_labels=True, 
+                 size=(12,10), 
+                 capped=None,
+                 save_path=None):
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -102,7 +108,7 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
         if cluster != prev_cluster:
             user_cluster_boundaries.append(i)
             prev_cluster = cluster
-    user_cluster_boundaries.append(len(sorted_user_clusters_list))  # final bound
+    user_cluster_boundaries.append(len(sorted_user_clusters_list))  
 
     item_cluster_boundaries = [0]
     prev_cluster = sorted_item_clusters_list[0]
@@ -110,14 +116,13 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
         if cluster != prev_cluster:
             item_cluster_boundaries.append(i)
             prev_cluster = cluster
-    item_cluster_boundaries.append(len(sorted_item_clusters_list))  # final bound
+    item_cluster_boundaries.append(len(sorted_item_clusters_list))  
 
     # Create figure with appropriate size and layout for covariates
     fig = plt.figure(figsize=size)
 
     # Set the layout based on whether we have covariates
     if user_covariates is not None or item_covariates is not None:
-        # Define grid for main heatmap and covariate bars
         width_ratios = [0.02, 1] if user_covariates is not None else [0, 1]
         height_ratios = [1, 0.02] if item_covariates is not None else [1, 0]
         gs = fig.add_gridspec(2, 2, width_ratios=width_ratios, 
@@ -172,7 +177,6 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
 
     # Process and plot user covariates if provided
     if user_covariates is not None:
-        # Extract covariates for sorted users
         sorted_user_covs = [user_covariates[i] for i in idx_sort_users]
         
         # Get unique categories and assign colors
@@ -184,7 +188,6 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
         n_users = len(sorted_user_covs)
         user_cov_matrix = np.zeros((n_users, 1))
         for i, cov in enumerate(sorted_user_covs):
-            # Convert category to numeric index for colormapping
             user_cov_matrix[i, 0] = unique_user_cats.index(cov)
         
         # Plot user covariates with proper alignment
@@ -201,12 +204,11 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
         ax_user_cov.legend(handles=user_legend_elements, title='User Covariates',
                         bbox_to_anchor=(0.1, 0.1), loc='center right')
 
-    # Process and plot item covariates if provided
     if item_covariates is not None:
         # Extract covariates for sorted items
         if isinstance(item_covariates, dict):
             sorted_item_covs = [item_covariates[i] for i in idx_sort_items]
-        else:  # Assume it's a list
+        else: 
             sorted_item_covs = [item_covariates[i] for i in idx_sort_items]
         
         # Get unique categories and assign colors
@@ -218,12 +220,10 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
         n_items = len(sorted_item_covs)
         item_cov_matrix = np.zeros((1, n_items))
         for i, cov in enumerate(sorted_item_covs):
-            # Convert category to numeric index for colormapping
             item_cov_matrix[0, i] = unique_item_cats.index(cov)
         
         # Plot item covariates with proper alignment
         # The extent parameter is set to match the axis limits of the heatmap
-        # Align the width of ax_item_cov with ax_heatmap
         heatmap_pos = ax_heatmap.get_position()
         ax_item_cov.set_position([heatmap_pos.x0, ax_item_cov.get_position().y0, 
                                 heatmap_pos.width, ax_item_cov.get_position().height])
@@ -236,10 +236,12 @@ def plot_heatmap(model, user_covariates=None, item_covariates=None, add_labels=T
         ax_item_cov.set_xticks([])
         ax_item_cov.set_yticks([])
         
-        # Add a legend for item covariates
         item_legend_elements = [Rectangle((0, 0), 1, 1, color=item_color_dict[cat], label=str(cat)) 
                                 for cat in unique_item_cats]
         ax_item_cov.legend(handles=item_legend_elements, title='Item Covariates',
                             bbox_to_anchor=(0.25, -5), loc='center right')    
 
-    plt.show()
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight')
+    else:
+        plt.show()

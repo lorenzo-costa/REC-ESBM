@@ -7,7 +7,7 @@ from aux_functions import plot_heatmap
 from esbm_rec import esbm
 from dc_esbm_rec import dcesbm
 from baseline import Baseline
-from nb_functions import compute_log_likelihood
+from analysis.numba_functions import compute_log_likelihood
 from valid_functs import validate_models, generate_val_set, multiple_runs
 import seaborn as sns
 from expectations import expected_cl_py, HGnedin
