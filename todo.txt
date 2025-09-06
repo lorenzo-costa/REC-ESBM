@@ -1,0 +1,2 @@
+- write tests for priors
+- write tests for gibbs type prior samplign scheme

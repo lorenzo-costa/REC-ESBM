@@ -1,5 +1,4 @@
 import numpy as np
-import math
 from scipy import sparse
 from scipy.stats import mode
 
@@ -118,7 +117,6 @@ class Baseline:
                  device='cpu'):
 
         # a lot of type and value checking
-        
         if num_items is None or not isinstance(num_items, int) or num_items <= 0:
             raise Exception('please provide valid number of items')
         

@@ -47,8 +47,6 @@ def relabel_clusters(cluster_indices):
 
 
 ################################################
-# auxialiaries for plotting
-
 # function to plot the heatmap representation
 
 def plot_heatmap(model, 
